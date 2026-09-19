@@ -1,0 +1,54 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>VCU Local Git Manager</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#f3f5f7;color:#18212b}header{padding:18px 24px;background:#17212b;color:#fff}main{max-width:1200px;margin:20px auto;padding:0 18px}.card{background:#fff;padding:18px;border-radius:10px;margin-bottom:15px;box-shadow:0 1px 5px #0002}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}input,textarea{width:100%;box-sizing:border-box;padding:9px;margin:5px 0 12px;border:1px solid #ccd3da;border-radius:6px}button{padding:9px 14px;margin:4px;border:0;border-radius:6px;background:#263746;color:white;cursor:pointer}.ok{background:#28764a}.danger{background:#963838}.pill{display:inline-block;padding:5px 9px;border-radius:12px;background:#e9eef2;margin:3px}.file{border-top:1px solid #ddd;padding:10px 0}.diff{display:none}pre{white-space:pre-wrap;max-height:480px;overflow:auto;background:#111;color:#eee;padding:14px;border-radius:7px}small{color:#65727e}
+</style></head>
+<body><header><h2>VCU Local Git Manager</h2><div>Local-only HTTP UI • Python backend • comparison-first workflow</div></header><main>
+
+<div class="card"><h3>Project & Settings</h3><div class="grid">
+<div>Local project path<input id="local"></div>
+<div>GitHub repository<input id="repo" placeholder="owner/repository"></div>
+<div>GitHub path<input id="remotePath" value="/"></div>
+<div>Branch<input id="branch" value="main"></div>
+<div>Revision From<input id="v1" value="V1"></div>
+<div>Revision To<input id="v2" value="V2"></div>
+</div>
+Notes<textarea id="notes" rows="3"></textarea>
+<button class="ok" onclick="saveConfig()">Save configuration</button> <span id="saved"></span>
+<p><small>Settings are stored locally in config.json and restored when the server starts.</small></p></div>
+
+<div class="card"><h3>1. Compare Full Project / Folders</h3>
+<div class="grid"><div>V1 / source folder<input id="a"></div><div>V2 / destination folder<input id="b"></div></div>
+<button onclick="compare()">Compare every file & line</button><div id="summary"></div><div id="files"></div></div>
+
+<div class="card"><h3>2. Generate Revision Difference Note</h3>
+<p>Creates a TXT note containing file status, size, SHA-256, line counts and line-by-line differences.</p>
+<button onclick="makeReport()">Generate DIFFERENCE_V1_TO_V2.txt</button><span id="reportMsg"></span></div>
+
+<div class="card"><h3>3. Git / CMD Replacement</h3>
+<button onclick="git('status')">Status</button><button onclick="git('fetch')">Fetch</button><button onclick="git('pull')">Pull</button>
+<button onclick="git('branch','-a')">Branches</button><button onclick="git('log','--oneline','-20')">History</button><button onclick="git('diff')">Diff</button>
+<button onclick="git('add','-A')">Stage all</button><button onclick="commit()">Commit</button><button class="ok" onclick="push()">Push</button>
+<pre id="gitout"></pre></div>
+
+<div class="card"><h3>4. Safe Local Replacement</h3>
+<p>Always compare and review first. Create a backup before any destructive local replacement.</p>
+<button onclick="backup()">Create local backup</button>
+<button class="danger" onclick="alert('Safety gate: review the Git diff and backup first. This starter build does not silently overwrite local files.')">Replacement confirmation</button></div>
+
+<div class="card"><h3>Activity History</h3><button onclick="activity()">Refresh</button><pre id="activity"></pre></div>
+</main><script>
+let last=null;
+async function api(u,o={}){let r=await fetch(u,{method:o.method||'GET',headers:{'Content-Type':'application/json'},body:o.body?JSON.stringify(o.body):undefined});return r.json()}
+async function init(){let c=await api('/api/config');local.value=c.local_path||'';repo.value=c.repo||'';remotePath.value=c.remote_path||'/';branch.value=c.branch||'main';v1.value=c.v1||'V1';v2.value=c.v2||'V2';notes.value=c.notes||'';a.value=c.local_path||'';activity()}
+async function saveConfig(){await api('/api/config',{method:'POST',body:{local_path:local.value,repo:repo.value,remote_path:remotePath.value,branch:branch.value,v1:v1.value,v2:v2.value,notes:notes.value}});saved.textContent=' Saved.'}
+async function compare(){let r=await api('/api/compare',{method:'POST',body:{a:a.value||local.value,b:b.value}});if(r.error)return alert(r.error);last=r;summary.innerHTML=Object.entries(r.summary).map(x=>`<span class=pill>${x[0]}: ${x[1]}</span>`).join('');files.innerHTML=r.files.map((x,i)=>`<div class=file><b>${x.status}</b> — ${x.file} — ${x.a_size||0} → ${x.b_size||0} bytes ${x.diff?`<button onclick="document.getElementById('d${i}').style.display='block'">View line diff</button>`:''}<pre class=diff id=d${i}>${esc(x.diff||'No text diff / binary or unchanged')}</pre></div>`).join('')}
+function esc(s){return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}
+async function makeReport(){if(!last)return alert('Compare first.');let r=await api('/api/report',{method:'POST',body:{files:last.files,summary:last.summary,v1:v1.value,v2:v2.value,branch:branch.value,notes:notes.value,name:`DIFFERENCE_${v1.value||'V1'}_TO_${v2.value||'V2'}.txt`}});reportMsg.textContent=' Created: '+r.path}
+async function git(...args){let r=await api('/api/git',{method:'POST',body:{path:local.value,args}});gitout.textContent=r.stdout+'\\n'+r.stderr;activity()}
+async function commit(){if(!confirm('Commit the currently staged changes with your notes?'))return;git('commit','-m',notes.value||'VCU revision')}
+async function push(){if(!last)return alert('Run and review the comparison first.');if(!confirm('Have you reviewed EVERY changed file and line?\\n\\nContinue with stage + commit + push?'))return;await git('add','-A');await git('commit','-m',notes.value||'VCU revision');if(confirm('Commit completed. Push to origin/'+(branch.value||'main')+' now?'))git('push','origin',branch.value||'main')}
+async function backup(){let r=await api('/api/backup',{method:'POST',body:{path:local.value,notes:notes.value}});alert(r.path||r.error);activity()}
+async function activity(){let r=await api('/api/activity');document.getElementById('activity').textContent=r.map(x=>`${x.time} | ${x.operation} | ${x.notes||''} | ${JSON.stringify(x)}`).join('\\n')}
+init();
+</script></body></html>

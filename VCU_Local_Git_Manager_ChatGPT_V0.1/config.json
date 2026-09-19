@@ -1,0 +1,12 @@
+{
+  "local_path": "",
+  "repo": "",
+  "branch": "main",
+  "remote_path": "/",
+  "port": 8765,
+  "theme": "light",
+  "auto_backup": true,
+  "v1": "V1",
+  "v2": "V2",
+  "notes": ""
+}
