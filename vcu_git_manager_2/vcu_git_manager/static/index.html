@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VCU Local GitHub Manager</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="frame">
+
+  <aside class="rail">
+    <div class="rail-brand">
+      <span class="rail-brand-mark">git</span>
+      <span class="rail-brand-name">VCU Manager</span>
+    </div>
+
+    <nav class="rail-nav">
+      <button class="rail-btn active" data-view="status">Status</button>
+      <button class="rail-btn" data-view="upload">Upload<br><span>Local &rarr; GitHub</span></button>
+      <button class="rail-btn" data-view="pull">Pull<br><span>GitHub &rarr; Local</span></button>
+      <button class="rail-btn" data-view="activity">Activity</button>
+      <button class="rail-btn" data-view="settings">Settings</button>
+    </nav>
+
+    <div class="rail-foot">
+      <span id="git-indicator" class="dot dot-unknown"></span>
+      <span id="git-indicator-label">checking git…</span>
+    </div>
+  </aside>
+
+  <main class="content">
+
+    <!-- STATUS -->
+    <section id="view-status" class="view active">
+      <header class="view-head">
+        <h1>Project status</h1>
+        <p>What this app currently knows about your local copy and its remote.</p>
+      </header>
+
+      <div class="card" id="status-card">
+        <div class="empty">Loading…</div>
+      </div>
+
+      <div class="card" id="prepare-card" style="display:none;">
+        <h3>This folder isn't a git repository yet</h3>
+        <p class="muted">Clone it fresh from GitHub, or turn an existing local folder into a repository linked to your remote.</p>
+        <button class="btn primary" id="btn-prepare">Prepare repository</button>
+        <div class="log-line" id="prepare-result"></div>
+      </div>
+    </section>
+
+    <!-- UPLOAD -->
+    <section id="view-upload" class="view">
+      <header class="view-head">
+        <h1>Upload — Local &rarr; GitHub</h1>
+        <p>Scan your local project, review exactly what changed, then commit and push.</p>
+      </header>
+
+      <ol class="pipeline" id="upload-pipeline">
+        <li data-step="scan" class="pipe-active">Scan &amp; compare</li>
+        <li data-step="review">Review difference note</li>
+        <li data-step="confirm">Confirm &amp; push</li>
+      </ol>
+
+      <div class="card">
+        <div class="field-row">
+          <div>
+            <label>Previous revision <span class="muted">(leave blank for a first upload)</span></label>
+            <input id="upload-from" type="text" placeholder="leave blank if none yet">
+          </div>
+          <div>
+            <label>New revision <span class="muted">(required, must be unused)</span></label>
+            <input id="upload-to" type="text" placeholder="V1">
+          </div>
+        </div>
+        <label>Revision notes (what you intended / did)</label>
+        <textarea id="upload-notes" rows="3" placeholder="e.g. CAN1 auto-baud updated. Removed dependency on CAN traffic."></textarea>
+        <button class="btn primary" id="btn-upload-scan">Scan &amp; compare</button>
+        <div class="log-line" id="upload-scan-error"></div>
+      </div>
+
+      <div class="card" id="upload-summary-card" style="display:none;">
+        <h3>Comparison summary</h3>
+        <div class="stat-grid" id="upload-stats"></div>
+        <div class="file-list" id="upload-files"></div>
+        <div class="note-actions">
+          <button class="btn ghost" id="btn-upload-view-note">View difference note</button>
+        </div>
+      </div>
+
+      <div class="card" id="upload-confirm-card" style="display:none;">
+        <h3>Ready to commit and push</h3>
+        <p class="muted">This writes the difference note into <code>Revision_Notes/</code>, commits everything, and pushes to the configured branch.</p>
+        <button class="btn danger" id="btn-upload-confirm">Confirm upload</button>
+        <div class="log-line" id="upload-confirm-result"></div>
+      </div>
+    </section>
+
+    <!-- PULL -->
+    <section id="view-pull" class="view">
+      <header class="view-head">
+        <h1>Pull — GitHub &rarr; Local</h1>
+        <p>Fetch the remote branch, review what would change, then back up and replace.</p>
+      </header>
+
+      <ol class="pipeline" id="pull-pipeline">
+        <li data-step="scan" class="pipe-active">Fetch, scan &amp; compare</li>
+        <li data-step="review">Review difference note</li>
+        <li data-step="confirm">Backup &amp; replace</li>
+      </ol>
+
+      <div class="card">
+        <div class="field-row">
+          <div>
+            <label>Previous revision <span class="muted">(local, before replace — blank OK)</span></label>
+            <input id="pull-from" type="text" placeholder="leave blank if none yet">
+          </div>
+          <div>
+            <label>New revision <span class="muted">(remote, incoming — required, must be unused)</span></label>
+            <input id="pull-to" type="text" placeholder="V1">
+          </div>
+        </div>
+        <button class="btn primary" id="btn-pull-scan">Fetch, scan &amp; compare</button>
+        <div class="log-line" id="pull-scan-error"></div>
+      </div>
+
+      <div class="card" id="pull-summary-card" style="display:none;">
+        <h3>Comparison summary</h3>
+        <div class="stat-grid" id="pull-stats"></div>
+        <div class="file-list" id="pull-files"></div>
+        <div class="note-actions">
+          <button class="btn ghost" id="btn-pull-view-note">View difference note</button>
+        </div>
+      </div>
+
+      <div class="card warn" id="pull-confirm-card" style="display:none;">
+        <h3>⚠ Local files will be replaced</h3>
+        <p class="muted">A full backup of your current working tree is made first, then the local branch is reset to exactly match the remote.</p>
+        <button class="btn danger" id="btn-pull-confirm">Backup &amp; confirm replace</button>
+        <div class="log-line" id="pull-confirm-result"></div>
+      </div>
+    </section>
+
+    <!-- ACTIVITY -->
+    <section id="view-activity" class="view">
+      <header class="view-head">
+        <h1>Activity history</h1>
+        <p>Every operation this app has performed, newest first.</p>
+      </header>
+      <div class="card">
+        <table class="activity-table" id="activity-table">
+          <thead>
+            <tr><th>When</th><th>Operation</th><th>Revision</th><th>Result</th><th>Files</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty" id="activity-empty" style="display:none;">No activity recorded yet.</div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="view-settings" class="view">
+      <header class="view-head">
+        <h1>Settings</h1>
+        <p>Saved to disk immediately and reloaded automatically every time you reopen this app.</p>
+      </header>
+
+      <div class="card">
+        <h3>Local</h3>
+        <label>Local project path</label>
+        <input id="cfg-local_project_path" type="text" placeholder="D:\Projects\Zitto_MB_V1">
+
+        <label>Project name (used in the difference note header)</label>
+        <input id="cfg-project_name" type="text" placeholder="Zitto_MB_V1">
+
+        <h3>GitHub</h3>
+        <div class="field-row">
+          <div>
+            <label>Owner / organization</label>
+            <input id="cfg-github_owner" type="text" placeholder="velmuruganv098">
+          </div>
+          <div>
+            <label>Repository <span class="muted">(name only, not the full URL)</span></label>
+            <input id="cfg-github_repo" type="text" placeholder="Zitto_MB_V1">
+          </div>
+        </div>
+        <div class="field-row">
+          <div>
+            <label>Branch</label>
+            <input id="cfg-branch" type="text" placeholder="main">
+          </div>
+          <div>
+            <label>GitHub path</label>
+            <input id="cfg-github_path" type="text" placeholder="/">
+          </div>
+        </div>
+        <label>Personal Access Token <span class="muted">(stored locally in data/config.json — used only to authenticate push/fetch/pull)</span></label>
+        <input id="cfg-github_token" type="password" placeholder="ghp_...">
+
+        <h3>Revision &amp; folders</h3>
+        <div class="field-row">
+          <div>
+            <label>Previous revision label</label>
+            <input id="cfg-previous_revision" type="text" placeholder="V1">
+          </div>
+          <div>
+            <label>New revision label</label>
+            <input id="cfg-new_revision" type="text" placeholder="V2">
+          </div>
+        </div>
+        <div class="field-row">
+          <div>
+            <label>Revision notes folder (in the repo)</label>
+            <input id="cfg-revision_notes_folder" type="text" placeholder="Revision_Notes">
+          </div>
+          <div>
+            <label>Backup folder (local only)</label>
+            <input id="cfg-backup_folder" type="text" placeholder=".backups">
+          </div>
+        </div>
+        <label>Standing revision notes <span class="muted">(prefilled into Upload notes each time; edit per-revision there)</span></label>
+        <textarea id="cfg-revision_notes" rows="2"></textarea>
+
+        <button class="btn primary" id="btn-save-settings">Save settings</button>
+        <div class="log-line" id="settings-save-result"></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="modal-backdrop" id="note-modal-backdrop">
+  <div class="modal">
+    <div class="modal-head">
+      <span id="note-modal-title">Difference note</span>
+      <button class="btn ghost small" id="note-modal-close">Close</button>
+    </div>
+    <pre id="note-modal-body"></pre>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
