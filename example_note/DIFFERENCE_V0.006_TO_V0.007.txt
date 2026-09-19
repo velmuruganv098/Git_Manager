@@ -1,0 +1,241 @@
+============================================================
+PROJECT REVISION DIFFERENCE
+============================================================
+
+PROJECT:
+Zitto_MB_V1
+
+FROM:
+V0.006
+
+TO:
+V0.007
+
+DATE:
+19-09-2026 02:30:02
+
+BRANCH:
+V0.007
+
+DIRECTION:
+LOCAL -> GITHUB
+
+SOURCE:
+C:\Projects\Zitto_MB_V1
+
+DESTINATION:
+velmuruganv098/Zitto_MB_V1 (branch: V0.007)
+
+============================================================
+REVISION NOTES (author-entered - what was intended/done)
+============================================================
+CAN1 auto-baud updated. Removed dependency on CAN traffic.
+Added loopback confirmation. Added CAN1 IRQ handler.
+CAN2 baud switched to auto-detect to match CAN1 behavior.
+
+============================================================
+SUMMARY (automatically detected - what actually changed)
+============================================================
+
+Files Checked     : 9
+Unchanged         : 5
+Modified          : 2
+Added             : 2
+Deleted           : 1
+
+Lines Added       : 34
+Lines Deleted     : 9
+
+============================================================
+FILE DIFFERENCES
+============================================================
+
+[1] src/CAN/can1.c
+------------------------------------------------------------
+
+STATUS:
+MODIFIED
+
+OLD SIZE:
+17,982 bytes
+
+NEW SIZE:
+18,421 bytes
+
+OLD LINES:
+631
+
+NEW LINES:
+642
+
+OLD SHA-256:
+a3f8c2...19be
+
+NEW SHA-256:
+b71e05...6cd2
+
+------------------------------------------------------------
+LINE DIFFERENCE
+------------------------------------------------------------
+
+STATUS: MODIFIED
+OLD (from line 125):
+  CTRL1 = 0x045A0007;
+NEW (from line 125):
+  CTRL1 = 0x095A0007;
+
+STATUS: MODIFIED
+OLD (from line 151):
+      CAN_Init();
+NEW (from line 151):
+      CAN_Init();
+      Can_SetBaud();
+
+============================================================
+
+[2] src/CAN/can1_irq.c
+------------------------------------------------------------
+
+STATUS:
+ADDED
+
+OLD SIZE:
+N/A
+
+NEW SIZE:
+3,821 bytes
+
+OLD LINES:
+N/A
+
+NEW LINES:
+142
+
+OLD SHA-256:
+FILE DOES NOT EXIST
+
+NEW SHA-256:
+7ce9a1...44f0
+
+============================================================
+
+[3] src/CAN/can2.c
+------------------------------------------------------------
+
+STATUS:
+MODIFIED
+
+OLD SIZE:
+9,840 bytes
+
+NEW SIZE:
+9,902 bytes
+
+OLD LINES:
+388
+
+NEW LINES:
+391
+
+OLD SHA-256:
+0c88e4...ab21
+
+NEW SHA-256:
+44d9f0...9e13
+
+------------------------------------------------------------
+LINE DIFFERENCE
+------------------------------------------------------------
+
+STATUS: MODIFIED
+OLD (from line 60):
+  #define CAN2_BAUD_DEFAULT   500000U
+NEW (from line 60):
+  #define CAN2_BAUD_DEFAULT   AUTO_BAUD
+
+============================================================
+
+[4] src/APP/version.h
+------------------------------------------------------------
+
+STATUS:
+ADDED
+
+OLD SIZE:
+N/A
+
+NEW SIZE:
+96 bytes
+
+OLD LINES:
+N/A
+
+NEW LINES:
+4
+
+OLD SHA-256:
+FILE DOES NOT EXIST
+
+NEW SHA-256:
+1f2a3b...cc90
+
+============================================================
+
+[5] src/CAN/can1_manual_baud.c
+------------------------------------------------------------
+
+STATUS:
+DELETED
+
+OLD SIZE:
+2,140 bytes
+
+NEW SIZE:
+N/A
+
+OLD LINES:
+74
+
+NEW LINES:
+N/A
+
+OLD SHA-256:
+9b0d1e...77aa
+
+NEW SHA-256:
+FILE DOES NOT EXIST
+
+============================================================
+
+[6] build/firmware.elf
+------------------------------------------------------------
+
+STATUS:
+MODIFIED
+
+TYPE:
+BINARY DIFFERENCE (size/hash compared, not line content)
+
+OLD SIZE:
+412,308 bytes
+
+NEW SIZE:
+414,920 bytes
+
+OLD SHA-256:
+5aa10c...3e2f
+
+NEW SHA-256:
+88bb21...0d4a
+
+============================================================
+
+UNCHANGED FILES (verified, content identical)
+------------------------------------------------------------
+src/APP/main.c  -  SIZE: SAME  -  SHA256: SAME
+src/UART/uart_pkt.c  -  SIZE: SAME  -  SHA256: SAME
+src/UART/uart_pkt.h  -  SIZE: SAME  -  SHA256: SAME
+README.md  -  SIZE: SAME  -  SHA256: SAME
+Project_Settings/board.cfg  -  SIZE: SAME  -  SHA256: SAME
+
+============================================================
